@@ -190,7 +190,7 @@ public class Particle3D {
         ArrayList<Particle3D> particles = new ArrayList<>();
         
         //Check whether there is a next line, read the name and 7 numbers, store them in a new Particle3D
-        while(scanner.hasNextLine()){
+        while(scanner.hasNext()){
             particles.add(new Particle3D(scanner.next(), scanner.nextDouble(), new Vector3D(scanner.nextDouble(), scanner.nextDouble(), scanner.nextDouble()), new Vector3D(scanner.nextDouble(), scanner.nextDouble(), scanner.nextDouble()))) ;
         }
         scanner.close();
