@@ -34,42 +34,41 @@ public class NBody {
 		//////////////////////////
 
 		//Force calculations, don't need to beware double-counting
-		//NEED TO PREVENT CREATION OF SELF-ACTING FORCES
-		//WILL REPLACE WITH FOR LOOPS
+		//For Loop should work, haven't had time to test yet
 		//create gforcecurrent list and populate;
 		//list structure:
-		// 0-0, 0-1, ... 0-n, 1-0, 1-1, ..., n-n
-		
+		// 0-1, ... 0-n, 1-0, 1-2, ..., n-(n-1)
+			
 		ArrayList<Vector3D> gforcecurrent = new ArrayList<>();
 		
 		tempParticleCount1 = 0;
-		while (tempParticleCount1 <= particleCount){
-
-			tempParticleCount2 = 0;
-			while (tempParticleCount2 <= particleCount && te){
-
-				gforcecurrent.add(gForce(particles.get(tempParticleCount1),particles.get(tempParticleCount2)));
-
-
-				tempParticleCount2 += 1;
-
-			}
-
-			tempParticleCount1 += 1;
-
+		
+		for (tempParticleCount1 = 0; tempParticleCount1 > particleCount; tempParticleCount1 += 1){
+			for (tempParticleCount2 = 0; tempParticleCount2 > particleCount; tempParticleCount2 += 1){
+				if (tempParticleCount1 != tempParticleCount2){
+				
+					gforcecurrent.add(gForce(particles.get(tempParticleCount1),particles.get(tempParticleCount2)));			
+			}	
+		}
 		}
 
 		///////////////////////
 
+		//STOPPED WORKING AFTER FOR LOOP FIX, NEEDS HELP
+		//(Also realised it wasn't working in the first place, but oh well)
 		//Update Position of particles list based upon gforcecurrent list
 		//sum gforcecurrent for each object, apply to object
 
 		Vector3D tempGForce = new Vector3D (0.0,0.0,0.0);
 		tempParticleCount1 = 0;
+		tempParticleCount2 = 0;
+		int nloop = 0;
 		while (tempParticleCount1 <= particleCount){
-
-			tempParticleCount2 = 0;
-			while (tempParticleCount2 <= particleCount){
+			tempGForce.setX(0.0);
+			tempGForce.setY(0.0);
+			tempGForce.setZ(0.0);
+			
+			while (tempParticleCount2 <= (particleCount*(particleCount-1))){
 
 				tempGForce = Vector3D.add(tempGForce,gforcecurrent.get(tempParticleCount2));
 				tempParticleCount2 += 1;
@@ -81,33 +80,25 @@ public class NBody {
 
 		}
 
-		////////////////////////
-		
+		//////////////////////////
 
 		//Force calculations, don't need to beware double-counting
-		//NEED TO PREVENT CREATION OF SELF-ACTING FORCES
-		//WILL REPLACE WITH FOR LOOPS
-		//create gforcenew list and populate;
+		//For Loop should work, haven't had time to test yet
+		//create gforcecurrent list and populate;
 		//list structure:
-		// 0-0, 0-1, ... 0-n, 1-0, 1-1, ..., n-n
-		
+		// 0-1, ... 0-n, 1-0, 1-2, ..., n-(n-1)
+			
 		ArrayList<Vector3D> gforcenew = new ArrayList<>();
 		
 		tempParticleCount1 = 0;
-		while (tempParticleCount1 <= particleCount){
-
-			tempParticleCount2 = 0;
-			while (tempParticleCount2 <= particleCount){
-
-				gforcecurrent.add(gForce(particles.get(tempParticleCount1),particles.get(tempParticleCount2)));
-
-
-				tempParticleCount2 += 1;
-
-			}
-
-			tempParticleCount1 += 1;
-
+		
+		for (tempParticleCount1 = 0; tempParticleCount1 > particleCount; tempParticleCount1 += 1){
+			for (tempParticleCount2 = 0; tempParticleCount2 > particleCount; tempParticleCount2 += 1){
+				if (tempParticleCount1 != tempParticleCount2){
+				
+					gforcenew.add(gForce(particles.get(tempParticleCount1),particles.get(tempParticleCount2)));			
+			}	
+		}
 		}
 
 		///////////////////////
@@ -115,6 +106,7 @@ public class NBody {
 		System.out.printf("When I was a lad I served a term as office boy to an attorney's firm");
 
 	}
+	
 	//END OF MAIN METHOD
 
 
