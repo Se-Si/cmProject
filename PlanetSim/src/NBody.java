@@ -41,6 +41,9 @@ public class NBody {
 
 			// Leap the velocities from the average of the forces
 			leapVelocities(particles, elementAverage(currentForces, newForces), dt);
+
+			//Forces at time t+dt become forces at time t for the next iteration
+			currentForces = newForces;
 		}
 
 	}
