@@ -1,24 +1,52 @@
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Properties;
+import java.util.Set;
 
 
 public class NBody {
-
-	//Initial Variable definitions
+	// Simulation parameters, defaulted to 0
+	// Number of timesteps
+	static int iterations = 0;
+	// Size of timestep
+	static double dt = 0.0;
 	// Gravitational Constant
-	static double g = 1.0;
+	static double g = 0.0;
 
 	public static void main (String[] argv) throws IOException {
-
-		// Number of timesteps
-		int numstep = 5000;
-		// Size of timestep
-		double dt = 0.01;
 		// Initial time
-		double t = 0;
+		double t = 0.0;
 
-		//Read Planet info from SolarParticles.dat into 'particles' list
-		ArrayList<Particle3D> particles = Particle3D.readFile("SolarParticles.dat");
+
+		//Read the particles and initial conditions from file
+		//TODO: figure out a nice format for particles and maybe change the particle3D method a bit
+		ArrayList<Particle3D> particles = new ArrayList<>();// = Particle3D.readFile(argv[0]);
+
+		//Read the initial conditions from file
+		Properties param = new Properties();
+		param.load(new FileReader(argv[1]));
+		Set<String> properties = param.stringPropertyNames();
+		if(properties.contains("iterations")){
+			iterations = Integer.parseInt(param.getProperty("iterations"));
+		}
+		if(properties.contains("timestep")){
+			dt = Double.parseDouble(param.getProperty("timestep"));
+		}
+		if(properties.contains("gravconstant")){
+			g = Double.parseDouble(param.getProperty("gravconstant"));
+		}
+
+		//TESTING
+		System.out.printf("%d %f %f", iterations, dt, g);
+
+		//Create output file
+		PrintWriter trajectoryOuput = new PrintWriter(new FileWriter(argv[2]));
+
+
+		trajectoryOuput.close();
 
 
 		// Current forces at time t acting on all of the particles
@@ -27,12 +55,10 @@ public class NBody {
 		ArrayList<Vector3D> newForces;
 
 
-		//VERLET START
-
 		// Compute initial forces
 		currentForces = totalInteractionForces(particles);
 
-		for(int n=0;n<numstep;n++) {
+		for(int n=0;n<iterations;n++) {
 			// Leap all the particle positions
 			leapPositions(particles, currentForces, dt);
 
@@ -45,11 +71,13 @@ public class NBody {
 			//Forces at time t+dt become forces at time t for the next iteration
 			currentForces = newForces;
 		}
-
 	}
 
 
-	//System Static Methods
+
+	/*
+	 * Static methods
+	 */
 
 	//return GPE for two particles
 	public static double potentialEnergy(Particle3D a, Particle3D b){
