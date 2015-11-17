@@ -1,5 +1,6 @@
-import java.io.*;
-import java.util.ArrayList;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.util.Scanner;
 
 /**
@@ -184,14 +185,17 @@ public class Particle3D {
      *
      * @param filename the name of the file from which the contents will be read
      */
-    public static ArrayList<Particle3D> readFile(String filename) throws FileNotFoundException {
+    public static Particle3D[] readFile(String filename) throws FileNotFoundException {
         BufferedReader bufferedReader = new BufferedReader(new FileReader(filename));
         Scanner scanner = new Scanner(bufferedReader);
-        ArrayList<Particle3D> particles = new ArrayList<>();
-        
+
+        //Read the first line, which is the number of particles
+        int particleNum = Integer.parseInt(scanner.next());
+        Particle3D[] particles = new Particle3D[particleNum];
+
         //Check whether there is a next line, read the name and 7 numbers, store them in a new Particle3D
-        while(scanner.hasNext()){
-            particles.add(new Particle3D(scanner.next(), scanner.nextDouble(), new Vector3D(scanner.nextDouble(), scanner.nextDouble(), scanner.nextDouble()), new Vector3D(scanner.nextDouble(), scanner.nextDouble(), scanner.nextDouble()))) ;
+        for(int i=0;i<particles.length;i++){
+            particles[i] = new Particle3D(scanner.next(), scanner.nextDouble(), new Vector3D(scanner.nextDouble(), scanner.nextDouble(), scanner.nextDouble()), new Vector3D(scanner.nextDouble(), scanner.nextDouble(), scanner.nextDouble()));
         }
         scanner.close();
         return particles;

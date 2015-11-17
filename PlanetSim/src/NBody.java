@@ -2,7 +2,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.Properties;
 import java.util.Set;
 
@@ -23,7 +22,7 @@ public class NBody {
 
 		//Read the particles and initial conditions from file
 		//TODO: figure out a nice format for particles and maybe change the particle3D method a bit
-		ArrayList<Particle3D> particles = new ArrayList<>();// = Particle3D.readFile(argv[0]);
+		Particle3D[] particles = Particle3D.readFile(argv[0]);
 
 		//Read the initial conditions from file
 		Properties param = new Properties();
@@ -39,24 +38,20 @@ public class NBody {
 			g = Double.parseDouble(param.getProperty("gravconstant"));
 		}
 
-		//TESTING
-		System.out.printf("%d %f %f", iterations, dt, g);
-
 		//Create output file
-		PrintWriter trajectoryOuput = new PrintWriter(new FileWriter(argv[2]));
-
-
-		trajectoryOuput.close();
-
+		PrintWriter trajectoryOutput = new PrintWriter(new FileWriter(argv[2]));
 
 		// Current forces at time t acting on all of the particles
-		ArrayList<Vector3D> currentForces;
+		Vector3D[] currentForces;
 		// New forces at time t+dt acting on all of the particles
-		ArrayList<Vector3D> newForces;
+		Vector3D[] newForces;
 
 
 		// Compute initial forces
 		currentForces = totalInteractionForces(particles);
+
+		//Write initial positions to file
+		trajectoryOutput.write(String.format("%f %f\n", particles[1].getPosition().getX(), particles[1].getPosition().getY()));
 
 		for(int n=0;n<iterations;n++) {
 			// Leap all the particle positions
@@ -70,7 +65,15 @@ public class NBody {
 
 			//Forces at time t+dt become forces at time t for the next iteration
 			currentForces = newForces;
+
+			//Increase time by timestep
+			t += dt;
+
+			//Print output to file
+			trajectoryOutput.write(String.format("%f %f\n", particles[1].getPosition().getX(), particles[1].getPosition().getY()));
 		}
+
+		trajectoryOutput.close();
 	}
 
 
@@ -90,7 +93,7 @@ public class NBody {
 
 	}
 
-	//return gravitational force vector of a on b
+	//return gravitational force vector on a by b
 	public static Vector3D gForce(Particle3D a, Particle3D b){
 
 		//Create relative position vector and relative direction vector
@@ -103,47 +106,48 @@ public class NBody {
 		Vector3D gforce = rhat;
 		double ma = a.getMass();
 		double mb = b.getMass();
-		gforce.multScalar(-1.0*ma*mb*g);
+		gforce.multScalar(1.0*ma*mb*g);
 		gforce.divScalar(rmag*rmag);
 
 		return gforce;
 
 	}
 
-	public static ArrayList<Vector3D> totalInteractionForces(ArrayList<Particle3D> particles){
-		ArrayList<Vector3D> forces = new ArrayList<>(particles.size());
+	public static Vector3D[] totalInteractionForces(Particle3D[] particles){
+		Vector3D[] forces = new Vector3D[particles.length];
 
 		// Calculate the force on the i-th particle
-		for(int i=0;i<particles.size();i++){
+		for(int i=0;i<particles.length;i++){
 			// Total force on i-th particle
 			Vector3D force_i = new Vector3D(0.0, 0.0, 0.0);
 			// Add forces due to all other particles except itself
-			for(int j=0;j<particles.size();j++){
+			for(int j=0;j<particles.length;j++){
 				if(i != j) {
-					Vector3D.add(force_i, gForce(particles.get(i), particles.get(j)));
+					force_i = Vector3D.add(force_i, gForce(particles[i], particles[j]));
 				}
 			}
-			forces.set(i, force_i);
+			forces[i] = force_i;
+			//System.out.println(force_i.toString());
 		}
 
 		return forces;
 	}
 
 	//Return the total energy of the system of particles
-	public static double totalEnergy(ArrayList<Particle3D> particles){
+	public static double totalEnergy(Particle3D[] particles){
 		double totalKinetic = 0.0;
 		double totalPotential = 0.0;
 
 		//Calculate total kinetic energy
-		for(int i=0;i<particles.size();i++){
-			totalKinetic += particles.get(i).kineticEnergy();
+		for(int i=0;i<particles.length;i++){
+			totalKinetic += particles[i].kineticEnergy();
 		}
 
 		//Calculate total potential energy
-		for(int i=0;i<particles.size();i++){
+		for(int i=0;i<particles.length;i++){
 			for(int j=0;j<i-1;j++){
-				totalPotential+= -1.0 * g * particles.get(i).getMass() * particles.get(j).getMass()
-										/ Particle3D.particleSeparation(particles.get(i), particles.get(j)).mag();
+				totalPotential+= -1.0 * g * particles[i].getMass() * particles[j].getMass()
+										/ Particle3D.particleSeparation(particles[i], particles[j]).mag();
 			}
 		}
 
@@ -151,31 +155,31 @@ public class NBody {
 	}
 
 	//Leap the velocities of an ArrayList of particles using an ArrayList of forces
-	public static void leapVelocities(ArrayList<Particle3D> particles, ArrayList<Vector3D> forces, double dt){
-		for(int i=0;i<particles.size();i++){
-			particles.get(i).leapVelocity(forces.get(i), dt);
+	public static void leapVelocities(Particle3D[] particles, Vector3D[] forces, double dt){
+		for(int i=0;i<particles.length;i++){
+			particles[i].leapVelocity(forces[i], dt);
 		}
 	}
 
 	//Leap the positions of an ArrayList of particles using an ArrayList of forces
-	public static void leapPositions(ArrayList<Particle3D> particles, ArrayList<Vector3D> forces, double dt){
-		for(int i=0;i<particles.size();i++){
-			particles.get(i).leapPosition(forces.get(i), dt);
+	public static void leapPositions(Particle3D[] particles, Vector3D[] forces, double dt){
+		for(int i=0;i<particles.length;i++){
+			particles[i].leapPosition(forces[i], dt);
 		}
 	}
 
 	//Convenience method for computing the element-wise average of two equally sized ArrayLists
-	public static ArrayList<Vector3D> elementAverage(ArrayList<Vector3D> a, ArrayList<Vector3D> b){
-		if(a.size() == b.size()) {
-			ArrayList<Vector3D> averages = new ArrayList<>();
-			for (int i=0; i<a.size();i++){
-				Vector3D vec = Vector3D.add(a.get(i), b.get(i));
+	public static Vector3D[] elementAverage(Vector3D[] a, Vector3D[] b){
+		if(a.length == b.length) {
+			Vector3D[] averages = new Vector3D[a.length];
+			for (int i=0; i<a.length;i++){
+				Vector3D vec = Vector3D.add(a[i], b[i]);
 				vec.divScalar(2.0);
-				averages.set(i, vec);
+				averages[i] = vec;
 			}
 			return averages;
 		} else {
-			return new ArrayList<>();
+			return new Vector3D[0];
 		}
 	}
 }
