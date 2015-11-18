@@ -111,13 +111,13 @@ public class Particle3D {
         this.setVelocity(v);
     }
     
-    /** Returns a String representation of Particle3D.
+    /** Returns a String representation of Particle3D, in VMD format as such:
+     * label x y z
      *
      * @return the string representation.
      */
     public String toString() {
-        return "{" + this.name + "x=" + this.getPosition().getX() + ",y=" + this.getPosition().getY() +
-	       "z=" + this.getPosition().getZ() + "}";
+        return String.format("%s %f %f %f", name, getPosition().getX(), getPosition().getY(), getPosition().getZ());
     }
     
     /*

@@ -77,7 +77,6 @@ public class NBody {
 	}
 
 
-
 	/*
 	 * Static methods
 	 */
@@ -93,24 +92,15 @@ public class NBody {
 
 	}
 
-	//return gravitational force vector on a by b
+	//Return gravitational force vector on a by b
 	public static Vector3D gForce(Particle3D a, Particle3D b){
+		Vector3D force;
 
-		//Create relative position vector and relative direction vector
-		Vector3D r = Particle3D.particleSeparation(a,b);
-		double rmag = r.mag();
-		Vector3D rhat = r;
-		rhat.divScalar(rmag);
+		force = Particle3D.particleSeparation(a, b);
+		double r = Particle3D.particleSeparation(a, b).mag();
+		force.multScalar(g * a.getMass() * b.getMass() / (r * r * r));
 
-		//Create gravitational force for particle a acting on b
-		Vector3D gforce = rhat;
-		double ma = a.getMass();
-		double mb = b.getMass();
-		gforce.multScalar(1.0*ma*mb*g);
-		gforce.divScalar(rmag*rmag);
-
-		return gforce;
-
+		return force;
 	}
 
 	public static Vector3D[] totalInteractionForces(Particle3D[] particles){
@@ -127,7 +117,6 @@ public class NBody {
 				}
 			}
 			forces[i] = force_i;
-			//System.out.println(force_i.toString());
 		}
 
 		return forces;
