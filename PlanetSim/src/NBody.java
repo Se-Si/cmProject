@@ -51,7 +51,7 @@ public class NBody {
 		currentForces = totalInteractionForces(particles);
 
 		//Write initial positions to file
-		trajectoryOutput.write(String.format("%f %f\n", particles[1].getPosition().getX(), particles[1].getPosition().getY()));
+		writePointsToFile(particles, 1, trajectoryOutput);
 
 		for(int n=0;n<iterations;n++) {
 			// Leap all the particle positions
@@ -70,7 +70,7 @@ public class NBody {
 			t += dt;
 
 			//Print output to file
-			trajectoryOutput.write(String.format("%f %f\n", particles[1].getPosition().getX(), particles[1].getPosition().getY()));
+			writePointsToFile(particles, n+1, trajectoryOutput);
 		}
 
 		trajectoryOutput.close();
@@ -169,6 +169,15 @@ public class NBody {
 			return averages;
 		} else {
 			return new Vector3D[0];
+		}
+	}
+
+	//Write the coordinates of all particles to a file in VMD format
+	public static void writePointsToFile(Particle3D[] particles, int pointNum, PrintWriter printWriter){
+		printWriter.write(String.format("%d\n", particles.length));
+		printWriter.write(String.format("Point = %d\n", pointNum));
+		for(int i=0;i<particles.length;i++){
+			printWriter.write(particles[i].toString());
 		}
 	}
 }

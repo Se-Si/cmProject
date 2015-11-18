@@ -117,7 +117,7 @@ public class Particle3D {
      * @return the string representation.
      */
     public String toString() {
-        return String.format("%s %f %f %f", name, getPosition().getX(), getPosition().getY(), getPosition().getZ());
+        return String.format("%s %f %f %f\n", name, getPosition().getX(), getPosition().getY(), getPosition().getZ());
     }
     
     /*
