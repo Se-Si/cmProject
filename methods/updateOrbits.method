@@ -1,0 +1,52 @@
+/* 
+
+    This method takes in two Particle3D objects as well as the current total number of orbits of one the objects around the other.
+    The total number of orbits contains the full orbits expressed as the integer part and any partial orbit value expressed as the fractional part.
+    By comparing the updated partial orbit with the previous value for the partial orbit, the method returns an updated value for the total number of orbits.
+    This method assumes that one of the objects is orbitting the other.
+    This method assumes that the dt chosen is small enough so that the change in angle is never greater than or equal to the period of the orbit.
+*/
+
+public static double updateOrbits(Particle3D a, Paricle3D b, double previousOrbit) {
+
+    double orbit;
+    double dotP = Vector3D.dot(a, b);
+    double aMag = a.mag();
+    double bMag = b.mag();
+    
+    // This line calculates the angle/2π by dividing the scalar product by both the product of the two magnitudes and 2π. 
+    // The value of angle/2π is the updated partial orbit expressed as a fraction.
+    double angleFraction = java.lang.Math.acos(dotP / (aMag * bMag * 2 * Math.PI));          
+    
+    // This line retrieves the previous value for the partial orbit by extracting the fractional part from the total number of orbits 
+    double previousOrbitFractional = previousOrbit - Math.floor(previousOrbit);
+    
+    if (angleFraction > previousOrbitFractional) {
+        
+        // If the current partial orbit is greater than the previous one, the angle is still within the same period.
+        // The total number of orbits is then updated by replacing the previous partial orbit value with the current partial orbit value.
+        orbit = Math.floor(previousOrbit) + angleFraction;    
+        
+    } else if (angleFraction < previousOrbitFractional) {
+        
+        // If the current partial orbit is less than the previous one, this implies the orbit has entered a new period.
+        // Hence, the total full orbits is incremented by one (by setting it to the upper ceiling) whilst the new partial orbit value is added on.
+        orbit = Math.ceil(previousOrbit) + angleFraction;
+        
+    }
+    
+    return orbit;
+    
+}
+
+
+/* 
+
+    FYI: This method is designed so it can be used in the main algorithm which just continually runs over every body in the system.
+    Hence, it assumes we have an orbits[][] 2-dim matrix that stores the respective orbits of each body's orbitting bodies.
+    It can also be used otherwise but that means we need some special "orbit calculating algorithms" that specify which planet and which "moon".
+    Looking at the design feedback's emphasis on utilising the main algorithm for essentially everything, I think the first of the two plans is the one we'll go for.
+    If you guys can think of any better resource-saving ideas that allow this to be used in the main algorithm without a 2-dim matrix that will be riddled with 0's,
+    please tell me asap so I can adjust this. =D
+        
+*/
