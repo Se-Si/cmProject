@@ -1,0 +1,68 @@
+/*
+
+    Run this before the main algorithm starts
+    
+*/
+
+public static Vector3D (Particle3D planets[]) {
+
+    private Vector3D relativePos = new Vector3D;
+
+    for (i = 1; loopOrbits < 12; loopOrbits++) {
+    
+        relativePos[i-1] = Vector3D.subtract(planets[i].getPosition(), planets[0].getPosition());
+        
+    }
+    
+    return relativePos[];
+    
+}
+    
+ /*
+
+   This method assumes that the array planetsPreRelPos[] is set with all the starting positions of
+   the planets, Halley's Comet and Earth's Moon before the main algorithm's loop is started.
+    
+*/   
+        
+public static double planetOrbits(Particle3D planets[], Vector3D planetsPreRelPos[], double numPlanetOrbits[]) {
+
+    private int loopOrbits;
+    private Vector3D planetsCurrentRelPos[10] = new Vector3D;
+    
+    
+    for (i = 1; loopOrbits < 12; loopOrbits++) {
+    
+        planetsCurrentRelPos[i-1] = Vector3D.subtract(planets[i].getPosition(), planets[0].getPosition());
+        
+        numPlanetOrbits[i-1] = numPlanetOrbits[i-1] + java.lang.Math.acos(Vector3D.dot(planetsPreRelPos[i-1].getPosition(), planetsCurrentRelPos[i-1].getPosition()) / (planetsPreRelPos[i-1].mag * planetsCurrentRelPos[i-1].mag * 2 * Math.PI));
+        
+        planetsPreRelPos[i-1].setX(planetsCurrentRelPos[i-1].getX);
+        planetsPreRelPos[i-1].setY(planetsCurrentRelPos[i-1].getY);
+        planetsPreRelPos[i-1].setZ(planetsCurrentRelPos[i-1].getZ);
+        
+    }
+    
+    return numPlanetOrbits[];
+    
+}
+
+public static double moonOrbits(Particle3D moon, Vector3D moonPreRelPos, double numMoonOrbits, Particle3D earth) {
+
+    private Vector3D moonCurrentRelPos = new Vector3D;
+
+    moonCurrentRelPos = Vector3D.subtract(moon.getPosition(), earth.getPosition());
+        
+        numMoonOrbits = numMoonOrbits + java.lang.Math.acos(Vector3D.dot(moonPreRelPos.getPosition(), moonCurrentRelPos.getPosition()) / (moonPreRelPos.mag * moonCurrentRelPos.mag * 2 * Math.PI));
+        
+        moonPreRelPos.setX(moonCurrentRelPos.getX);
+        moonPreRelPos.setY(moonCurrentRelPos.getY);
+        moonPreRelPos.setZ(moonCurrentRelPos.getZ);
+        
+}    
+        
+    
+         
+    
+        
+    
