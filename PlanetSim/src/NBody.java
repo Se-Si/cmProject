@@ -41,19 +41,24 @@ public class NBody {
 		//Create output file
 		PrintWriter trajectoryOutput = new PrintWriter(new FileWriter(argv[2]));
 
+		// Variables used for analysis
+		// Array containing the calculated values of the aphelions for all the planets and pluto
+		double[] aphelions = new double[particles.length];
+		for(int i=0;i<aphelions.length;i++){
+			aphelions[i]=0.0;
+		}
+		// Array containing the calculated values of the perihelions for all the planets and pluto
+		double[] perihelions = new double[particles.length];
+		for(int i=0;i<aphelions.length;i++){
+			perihelions[i]=0.0;
+		}
+		double lowestEnergy = Double.POSITIVE_INFINITY;
+		double highestEnergy = Double.NEGATIVE_INFINITY;
+
 		// Current forces at time t acting on all of the particles
 		Vector3D[] currentForces;
 		// New forces at time t+dt acting on all of the particles
 		Vector3D[] newForces;
-
-		// Variables used for analysis
-		// Array containing the calculated values of the aphelions for all the planets and pluto
-		double[] aphelions = new double[particles.length];
-		// Array containing the calculated values of the perihelions for all the planets and pluto
-		double[] perihelions = new double[particles.length];
-		double lowestEnergy = Double.POSITIVE_INFINITY;
-		double highestEnergy = Double.NEGATIVE_INFINITY;
-
 
 		// Compute initial forces
 		currentForces = totalInteractionForces(particles);
@@ -63,7 +68,7 @@ public class NBody {
 
 		for(int n=0;n<iterations;n++) {
 			//Calculate progress
-			if(n%(iterations/20) == 0){
+			if(n%(iterations/10) == 0){
 				System.out.printf("Progress: %.0f%%\n", (float)n/(float)iterations * 100.f);
 			}
 
@@ -102,7 +107,7 @@ public class NBody {
 			checkApses(particles, radialVelocityComponentsOld, radialVelocityComponentsNew, aphelions, perihelions);
 
 			// Print output to file every 10 iterations
-			if(n%40 == 0) {
+			if(n%20 == 0) {
 				writePointsToFile(particles, n + 1, trajectoryOutput);
 			}
 
@@ -111,10 +116,10 @@ public class NBody {
 		}
 
 		for(int i=0;i<aphelions.length;i++) {
-			System.out.printf("r=%f\n",aphelions[i]);
+			System.out.printf("aphelion = %f,   perihelion = %f\n", aphelions[i], perihelions[i]);
 		}
 
-		System.out.println(Math.abs(highestEnergy-lowestEnergy));
+		System.out.println(Math.abs(highestEnergy-lowestEnergy)/Math.abs((highestEnergy+lowestEnergy)/2.0));
 
 		trajectoryOutput.close();
 	}
@@ -245,10 +250,14 @@ public class NBody {
 
 		for(int i=0;i<radialVelocityComponentOld.length;i++){
 			if((radialVelocityComponentOld[i] > 0.0) && (radialVelocityComponentNew[i] < 0.0)){
-				aphelions[i] = particles[i].getPosition().mag();
+				if(aphelions[i] == 0) {
+					aphelions[i] = particles[i].getPosition().mag();
+				}
 			}
 			if((radialVelocityComponentOld[i] < 0.0) && (radialVelocityComponentNew[i] > 0.0)){
-				perihelions[i] = particles[i].getPosition().mag();
+				if(perihelions[i] == 0) {
+					perihelions[i] = particles[i].getPosition().mag();
+				}
 			}
 		}
 	}
