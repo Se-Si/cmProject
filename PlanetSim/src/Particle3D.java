@@ -1,7 +1,8 @@
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.util.Scanner;
+import java.util.regex.Pattern;
 
 /**
  * A class representing a point particle moving in three-dimensional space, with setters, getters and constructors.
@@ -185,7 +186,8 @@ public class Particle3D {
      *
      * @param filename the name of the file from which the contents will be read
      */
-    public static Particle3D[] readFile(String filename) throws FileNotFoundException {
+    //TODO: cleanup this method + documentation
+    public static Particle3D[] readFile(String filename) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new FileReader(filename));
         Scanner scanner = new Scanner(bufferedReader);
 
@@ -193,10 +195,38 @@ public class Particle3D {
         int particleNum = Integer.parseInt(scanner.next());
         Particle3D[] particles = new Particle3D[particleNum];
 
+        /*
         //Check whether there is a next line, read the name and 7 numbers, store them in a new Particle3D
         for(int i=0;i<particles.length;i++){
             particles[i] = new Particle3D(scanner.next(), scanner.nextDouble(), new Vector3D(scanner.nextDouble(), scanner.nextDouble(), scanner.nextDouble()), new Vector3D(scanner.nextDouble(), scanner.nextDouble(), scanner.nextDouble()));
+        }*/
+
+        int i=-1;
+        while(scanner.hasNextLine()){
+            scanner.useDelimiter(Pattern.compile("\\s?=\\s?|\\s"));
+            String line = scanner.nextLine();
+            if(line.endsWith(":")){
+                String name = line.substring(0, line.length()-1);
+
+                scanner.next();
+                double M = scanner.nextDouble();
+                scanner.next();
+                double X = scanner.nextDouble();
+                scanner.next();
+                double Y = scanner.nextDouble();
+                scanner.next();
+                double Z = scanner.nextDouble();
+                scanner.next();
+                double VX = scanner.nextDouble();
+                scanner.next();
+                double VY = scanner.nextDouble();
+                scanner.next();
+                double VZ = scanner.nextDouble();
+
+                particles[++i] = new Particle3D(name, M, new Vector3D(X,Y,Z), new Vector3D(VX,VY,VZ));
+            }
         }
+
         scanner.close();
         return particles;
     }

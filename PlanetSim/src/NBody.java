@@ -47,9 +47,9 @@ public class NBody {
 		Vector3D[] newForces;
 
 		// Array containing the calculated values of the aphelions for all the planets and pluto
-		double[] aphelions = new double[9];
+		double[] aphelions = new double[particles.length];
 		// Array containing the calculated values of the perihelions for all the planets and pluto
-		double[] perihelions = new double[9];
+		double[] perihelions = new double[particles.length];
 
 
 		// Compute initial forces
@@ -59,6 +59,10 @@ public class NBody {
 		writePointsToFile(particles, 1, trajectoryOutput);
 
 		for(int n=0;n<iterations;n++) {
+			if(n%(iterations/100) == 0){
+				System.out.printf("Progress: %.0f%%\n", (float)n/(float)iterations * 100.f);
+			}
+
 			double[] radialVelocityComponentsOld;
 			double[] radialVelocityComponentsNew;
 
@@ -87,8 +91,10 @@ public class NBody {
 			// Increase time by timestep
 			t += dt;
 
-			// Print output to file
-			writePointsToFile(particles, n+1, trajectoryOutput);
+			// Print output to file every 10 iterations
+			if(n%10 == 0) {
+				writePointsToFile(particles, n + 1, trajectoryOutput);
+			}
 		}
 
 		for(int i=0;i<aphelions.length;i++) {
