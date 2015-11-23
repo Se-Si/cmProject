@@ -46,10 +46,13 @@ public class NBody {
 		// New forces at time t+dt acting on all of the particles
 		Vector3D[] newForces;
 
+		// Variables used for analysis
 		// Array containing the calculated values of the aphelions for all the planets and pluto
 		double[] aphelions = new double[particles.length];
 		// Array containing the calculated values of the perihelions for all the planets and pluto
 		double[] perihelions = new double[particles.length];
+		double lowestEnergy = Double.POSITIVE_INFINITY;
+		double highestEnergy = Double.NEGATIVE_INFINITY;
 
 
 		// Compute initial forces
@@ -59,7 +62,8 @@ public class NBody {
 		writePointsToFile(particles, 1, trajectoryOutput);
 
 		for(int n=0;n<iterations;n++) {
-			if(n%(iterations/100) == 0){
+			//Calculate progress
+			if(n%(iterations/20) == 0){
 				System.out.printf("Progress: %.0f%%\n", (float)n/(float)iterations * 100.f);
 			}
 
@@ -78,28 +82,39 @@ public class NBody {
 			// Leap the velocities from the average of the forces
 			leapVelocities(particles, elementAverage(currentForces, newForces), dt);
 
+			// Forces at time t+dt become forces at time t for the next iteration
+			currentForces = newForces;
+
 			// Recompute the radial velocity components at time t+dt
 			radialVelocityComponentsNew = radialVelocityComponents(particles);
+
+			// Calculate total energy and monitor energy fluctuations
+			double totalEnergy = totalEnergy(particles);
+			if(totalEnergy < lowestEnergy){
+				lowestEnergy = totalEnergy;
+			}
+			if(totalEnergy > highestEnergy){
+				highestEnergy = totalEnergy;
+			}
 
 			//TODO: add functionality to apply this to specific planets rather than every body in the system
 			// Check whether apses has been passed
 			checkApses(particles, radialVelocityComponentsOld, radialVelocityComponentsNew, aphelions, perihelions);
 
-			// Forces at time t+dt become forces at time t for the next iteration
-			currentForces = newForces;
+			// Print output to file every 10 iterations
+			if(n%40 == 0) {
+				writePointsToFile(particles, n + 1, trajectoryOutput);
+			}
 
 			// Increase time by timestep
 			t += dt;
-
-			// Print output to file every 10 iterations
-			if(n%10 == 0) {
-				writePointsToFile(particles, n + 1, trajectoryOutput);
-			}
 		}
 
 		for(int i=0;i<aphelions.length;i++) {
 			System.out.printf("r=%f\n",aphelions[i]);
 		}
+
+		System.out.println(Math.abs(highestEnergy-lowestEnergy));
 
 		trajectoryOutput.close();
 	}
