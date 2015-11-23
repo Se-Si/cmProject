@@ -46,6 +46,11 @@ public class NBody {
 		// New forces at time t+dt acting on all of the particles
 		Vector3D[] newForces;
 
+		// Array containing the calculated values of the aphelions for all the planets and pluto
+		double[] aphelions = new double[9];
+		// Array containing the calculated values of the perihelions for all the planets and pluto
+		double[] perihelions = new double[9];
+
 
 		// Compute initial forces
 		currentForces = totalInteractionForces(particles);
@@ -54,6 +59,12 @@ public class NBody {
 		writePointsToFile(particles, 1, trajectoryOutput);
 
 		for(int n=0;n<iterations;n++) {
+			double[] radialVelocityComponentsOld;
+			double[] radialVelocityComponentsNew;
+
+			// Compute radial velocity components before update
+			radialVelocityComponentsOld = radialVelocityComponents(particles);
+
 			// Leap all the particle positions
 			leapPositions(particles, currentForces, dt);
 
@@ -63,14 +74,25 @@ public class NBody {
 			// Leap the velocities from the average of the forces
 			leapVelocities(particles, elementAverage(currentForces, newForces), dt);
 
-			//Forces at time t+dt become forces at time t for the next iteration
+			// Recompute the radial velocity components at time t+dt
+			radialVelocityComponentsNew = radialVelocityComponents(particles);
+
+			//TODO: add functionality to apply this to specific planets rather than every body in the system
+			// Check whether apses has been passed
+			checkApses(particles, radialVelocityComponentsOld, radialVelocityComponentsNew, aphelions, perihelions);
+
+			// Forces at time t+dt become forces at time t for the next iteration
 			currentForces = newForces;
 
-			//Increase time by timestep
+			// Increase time by timestep
 			t += dt;
 
-			//Print output to file
+			// Print output to file
 			writePointsToFile(particles, n+1, trajectoryOutput);
+		}
+
+		for(int i=0;i<aphelions.length;i++) {
+			System.out.printf("r=%f\n",aphelions[i]);
 		}
 
 		trajectoryOutput.close();
@@ -178,6 +200,35 @@ public class NBody {
 		printWriter.write(String.format("Point = %d\n", pointNum));
 		for(int i=0;i<particles.length;i++){
 			printWriter.write(particles[i].toString());
+		}
+	}
+
+	//Computes the radial velocity components compared to the origin for an array of particles
+	public static double[] radialVelocityComponents(Particle3D[] particles){
+		Vector3D radialVector;
+		double[] radialVelocityComponents = new double[particles.length];
+		for(int i=0;i<particles.length;i++) {
+			radialVector = new Vector3D(particles[i].getPosition());
+			radialVector.divScalar(particles[i].getPosition().mag());
+			radialVelocityComponents[i] = Vector3D.dot(particles[i].getVelocity(), radialVector);
+		}
+		return radialVelocityComponents;
+	}
+
+	//Updates the array containing apsis values (passed by reference) by checking for a change of sign in the radial
+	//velocity component
+	public static void checkApses(Particle3D[] particles, double[] radialVelocityComponentOld, double[] radialVelocityComponentNew
+														, double[] aphelions, double[] perihelions){
+		boolean[] isAphelion = new boolean[radialVelocityComponentOld.length];
+		boolean[] isPerihelion = new boolean[radialVelocityComponentOld.length];
+
+		for(int i=0;i<radialVelocityComponentOld.length;i++){
+			if((radialVelocityComponentOld[i] > 0.0) && (radialVelocityComponentNew[i] < 0.0)){
+				aphelions[i] = particles[i].getPosition().mag();
+			}
+			if((radialVelocityComponentOld[i] < 0.0) && (radialVelocityComponentNew[i] > 0.0)){
+				perihelions[i] = particles[i].getPosition().mag();
+			}
 		}
 	}
 }
