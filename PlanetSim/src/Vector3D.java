@@ -60,14 +60,17 @@ public class Vector3D{
     public void setZ(double zz){ this.z = zz; }
     /**
      * Gets the x component of the vector.
+     * @return the x component
      */
     public double getX(){ return this.x; }
     /**
      * Gets the y component of the vector.
+     * @return the y component
      */
     public double getY(){ return this.y; }
     /**
      * Gets the z component of the vector.
+     * @return the z component
      */
     public double getZ(){ return this.z; }
 
@@ -77,12 +80,14 @@ public class Vector3D{
      */
     /**
      * Gives the square of the magnitude of the vector.
+     * @return the magnitude square
      */
     public double magSquared(){
         return x*x+y*y+z*z;
     }
     /**
      * Gives the magnitude of the vector.
+     * @return  the magnitude
      */
     public double mag(){
         return Math.sqrt(magSquared());
@@ -107,8 +112,7 @@ public class Vector3D{
      * Gives a String representation of the vector.
      */
     public String toString(){
-        String s = String.format("(%f, %f, %f)",x,y,z);
-        return s;
+        return String.format("(%f, %f, %f)",x,y,z);
     }
 
     /*
@@ -118,6 +122,7 @@ public class Vector3D{
      * Adds 2 vectors together.
      * @param v1 the first vector to be added
      * @param v2 the second vector to be added
+     * @return the resulting vector
      */
     public static Vector3D add(Vector3D v1, Vector3D v2){
         return new Vector3D(v1.getX()+v2.getX(),v1.getY()+v2.getY(),v1.getZ()+v2.getZ());
@@ -126,6 +131,7 @@ public class Vector3D{
      * Subtracts a vector v2 from a vector v1
      * @param v1 the first vector
      * @param v2 the second vector
+     * @return the resulting vector
      */
     public static Vector3D subtract(Vector3D v1, Vector3D v2){
         return new Vector3D(v1.getX()-v2.getX(),v1.getY()-v2.getY(),v1.getZ()-v2.getZ());
@@ -134,6 +140,7 @@ public class Vector3D{
      * Calculates the dot product of vectors v1 and v2
      * @param v1 the first vector
      * @param v2 the second vector
+     * @return the dot product
      */
     public static double dot(Vector3D v1, Vector3D v2){
         return v1.getX()*v2.getX()+v1.getY()*v2.getY()+v1.getZ()*v2.getZ();
@@ -142,6 +149,7 @@ public class Vector3D{
      * Calculates the cross product of vectors v1 and v2
      * @param v1 the first vector
      * @param v2 the second vector
+     * @return the resulting vector
      */
     public static Vector3D cross(Vector3D v1, Vector3D v2){
         return new Vector3D(v1.getY()*v2.getZ() - v1.getZ()*v2.getY(),
@@ -149,9 +157,10 @@ public class Vector3D{
                             v1.getX()*v2.getY() - v1.getY()*v2.getX());
     }
     /**
-     * Checks whether the vectors v1 and v2 are equivalent by comparing components.
+     * Checks whether the vectors v1 and v2 are equivalent by comparing components, up to a threshold of 1E-10.
      * @param v1 the first vector
      * @param v2 the second vector
+     * @return true if equivalent, false if not equivalent
      */
     public static boolean isEquivalent(Vector3D v1, Vector3D v2){
         //Threshold value

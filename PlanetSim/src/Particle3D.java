@@ -24,7 +24,38 @@ public class Particle3D {
     private double mass;
     private Vector3D position;
     private Vector3D velocity;
-    
+
+    /*
+     * Constructors
+     */
+
+    /** Default constructor. Sets all numerical particle properties to zero.
+     *  Particle name will be set to null.
+     */
+    public Particle3D() {
+        this.position = new Vector3D();
+        this.velocity = new Vector3D();
+        this.setName(null);
+        this.setMass(0.0);
+    }
+
+    /** Explicit constructor. Constructs a new Particle1D with
+     * explicitly given name, position, velocity, and mass.
+     *
+     * @param n a String that defines the name.
+     * @param m a double that defines the mass.
+     * @param p a Vector3D that defines the position.
+     * @param v a Vector3D that defines the velocity.
+     */
+    public Particle3D(String n, double m, Vector3D p, Vector3D v) {
+        this.position = new Vector3D();
+        this.velocity = new Vector3D();
+        this.setName(n);
+        this.setMass(m);
+        this.setPosition(p);
+        this.setVelocity(v);
+    }
+
     /*
      * Setters and Getters
      */
@@ -79,37 +110,6 @@ public class Particle3D {
     
     public void setName(String name) {
         this.name = name;
-    }
-    
-    /*
-     * Constructors
-     */
-    
-    /** Default constructor. Sets all numerical particle properties to zero.
-     *  Particle name will be set to null.
-     */
-    public Particle3D() {
-        this.position = new Vector3D();
-        this.velocity = new Vector3D();
-        this.setName(null);
-        this.setMass(0.0);
-    }
-    
-    /** Explicit constructor. Constructs a new Particle1D with
-     * explicitly given name, position, velocity, and mass.
-     *
-     * @param n a String that defines the name.
-     * @param m a double that defines the mass.
-     * @param p a Vector3D that defines the position.
-     * @param v a Vector3D that defines the velocity.
-     */
-    public Particle3D(String n, double m, Vector3D p, Vector3D v) {
-        this.position = new Vector3D();
-        this.velocity = new Vector3D();
-        this.setName(n);
-        this.setMass(m);
-        this.setPosition(p);
-        this.setVelocity(v);
     }
     
     /** Returns a String representation of Particle3D, in VMD format as such:
@@ -177,24 +177,26 @@ public class Particle3D {
      */
     
     /**
-     * Reads the contents of a file and returns it in the form of an ArrayList of Particle3D objects.
-     *
-     * The file must contain data blocks in the following format:
-     *
-     * [Name]:
-     * M=[mass]
-     * X=[x position] Y=[y position] Z=[z position]
-     * VX=[x velocity] VY=[y velocity] VZ=[z velocity]
-     *
-     * e.g.:
-     *
-     * Bartledan:
-     * M=6789
-     * X=1.234 Y=1.234 Z=1.234
-     * VX=4.321 VY=4.321 VZ=4.321
+     * Reads the contents of a file and returns it in the form of an ArrayList of Particle3D objects.<br>
+     *<br>
+     * The file must contain data blocks in the following format:<br>
+     *<br>
+     * [Name]:<br>
+     * M=[mass]<br>
+     * X=[x position] Y=[y position] Z=[z position]<br>
+     * VX=[x velocity] VY=[y velocity] VZ=[z velocity]<br>
+     *<br>
+     * e.g.:<br>
+     *<br>
+     * Bartledan:<br>
+     * M=6789<br>
+     * X=1.234 Y=1.234 Z=1.234<br>
+     * VX=4.321 VY=4.321 VZ=4.321<br>
      *
      *
      * @param filename the name of the file from which the contents will be read
+     * @return - The resulting array of Particle3Ds
+     * @throws IOException when files are not found
      */
     public static Particle3D[] readFile(String filename) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new FileReader(filename));
@@ -236,8 +238,10 @@ public class Particle3D {
     
     /**
      * Gives a Vector3D denoting the position of particle b relative to particle a.
+     *
      * @param a The first particle.
      * @param b The second particle.
+     * @return the separation vector
      */
     public static Vector3D particleSeparation(Particle3D a, Particle3D b){
         return Vector3D.subtract(b.getPosition(),a.getPosition());
