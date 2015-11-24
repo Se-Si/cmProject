@@ -3,43 +3,44 @@
 /*
 
     Run this before the main algorithm starts
+    It finds the relative positions of the planets at the start of the system
     
 */
 
-public static Vector3D setupPlanetsRelPos(Particle3D planets[], int moonIndex) {
+public static Vector3D setupPlanetsRelPos(Particle3D[] planets, int moonIndex) {
 
-    private int loopOrbits;
+        private int loopOrbits;
 
-    private Vector3D planetsRelPos[planets[].length()- 1] = new Vector3D;
+        private Vector3D[] planetsRelPos = new Vector3D[planets.length()- 1];
 
-    for (loopOrbits = 1; loopOrbits < planets[].length(); loopOrbits++) {
+        for (loopOrbits = 1; loopOrbits < planets.length(); loopOrbits++) {
 
-        if (loopOrbits != moonIndex) {
-        
-            planetsRelPos[i-1] = Vector3D.subtract(planets[i].getPosition(), planets[0].getPosition());
+            if (loopOrbits != moonIndex) {
+            
+                planetsRelPos[i-1] = Vector3D.subtract(planets[i].getPosition(), planets[0].getPosition());
+                
+            }
             
         }
         
+        return planetsRelPos;
+        
     }
-    
-    return planetsRelPos[];
-    
-}
     
  /*
 
-   This method assumes that the array planetsPreRelPos[] is set with all the starting positions of
-   the planets, Halley's Comet and Earth's Moon before the main algorithm's loop is started.
+   This method assumes that the array planetsPreRelPos is set with all the starting positions of
+   the planets and comets before the main algorithm's loop is started.
     
 */   
         
-public static double planetOrbits(Particle3D planets[], Vector3D planetsPreRelPos[], double numPlanetOrbits[]) {
+public static double planetOrbits(Particle3D[] planets, Vector3D[] planetsPreRelPos, double[] numPlanetOrbits, int moonIndex) {
 
     private int loopOrbits;
-    private Vector3D planetsCurrentRelPos[planets[].length() - 1] = new Vector3D;
+    private Vector3D[] planetsCurrentRelPos = new Vector3D[planets.length() - 1];
     
     
-    for (loopOrbits = 1; loopOrbits < planets[].length; loopOrbits++) {
+    for (loopOrbits = 1; loopOrbits < planets.length; loopOrbits++) {
     
         if (loopOrbits != moonIndex) {
     
@@ -47,15 +48,13 @@ public static double planetOrbits(Particle3D planets[], Vector3D planetsPreRelPo
             
             numPlanetOrbits[i-1] = numPlanetOrbits[i-1] + java.lang.Math.acos(Vector3D.dot(planetsPreRelPos[i-1].getPosition(), planetsCurrentRelPos[i-1].getPosition()) / (planetsPreRelPos[i-1].mag * planetsCurrentRelPos[i-1].mag * 2 * Math.PI));
             
-            planetsPreRelPos[i-1].setX(planetsCurrentRelPos[i-1].getX);
-            planetsPreRelPos[i-1].setY(planetsCurrentRelPos[i-1].getY);
-            planetsPreRelPos[i-1].setZ(planetsCurrentRelPos[i-1].getZ);
+            planetsPreRelPos = new Vector3D(planetsCurrentRelPos);
      
         }
             
     }
     
-    return numPlanetOrbits[];
+    return numPlanetOrbits;
   
 }
 
@@ -68,7 +67,7 @@ public static double planetOrbits(Particle3D planets[], Vector3D planetsPreRelPo
 
 */
 
-for (loopOrbits = 0; loopOrbits < planets[].length; loopOrbits++) {
+for (loopOrbits = 0; loopOrbits < planets.length; loopOrbits++) {
 
     if (moon.getName() == "Luna") {
 
@@ -106,22 +105,27 @@ public static Vector3D setupMoonRelPos(Particle3D moon, Particle3D earth) {
 
     moonRelPos= Vector3D.subtract(moon.getPosition(), earth.getPosition());
     
-    return relativePos[];
+    return relativePos;
     
 }
 
+/*
 
-public static double moonOrbits(Particle3D moon, Vector3D moonPreRelPos, double numMoonOrbits, Particle3D earth) {
+    This is the main algorithm method for calculating the number of orbits and updating the relative position
+    
+*/
+
+public static double moonOrbits(Particle3D moon, Particle3D earth, Vector3D moonPreRelPos, double numMoonOrbits, int moonIndex) {
 
     private Vector3D moonCurrentRelPos = new Vector3D;
 
     moonCurrentRelPos = Vector3D.subtract(moon.getPosition(), earth.getPosition());
+    
+    numMoonOrbits = numMoonOrbits + java.lang.Math.acos(Vector3D.dot(moonPreRelPos.getPosition(), moonCurrentRelPos.getPosition()) / (moonPreRelPos.mag * moonCurrentRelPos.mag * 2 * Math.PI));
+    
+    moonPreRelPos = new Vector3D(moonCurrentRelPos);
         
-        numMoonOrbits = numMoonOrbits + java.lang.Math.acos(Vector3D.dot(moonPreRelPos.getPosition(), moonCurrentRelPos.getPosition()) / (moonPreRelPos.mag * moonCurrentRelPos.mag * 2 * Math.PI));
-        
-        moonPreRelPos.setX(moonCurrentRelPos.getX);
-        moonPreRelPos.setY(moonCurrentRelPos.getY);
-        moonPreRelPos.setZ(moonCurrentRelPos.getZ);
+    return numMoonOrbits;
         
 }    
  
