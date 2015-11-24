@@ -5,7 +5,18 @@ import java.io.PrintWriter;
 import java.util.Properties;
 import java.util.Set;
 
-
+/**
+ * This code is to simulate the orbital motion of an N-body system due to gravitational forces,
+ * with functionality in place to track numbers of orbits, orbital period,
+ * and apoapsis/periapsis of each body, each assumed to be exhibiting orbital behaviour.
+ *
+ * Included are several methods for the calculation of relevant physical quantities,
+ * and several convenience methods for the application of various Vector3D and Particle3D methods to array formats.
+ *
+ * @author Sebastiaan van de Bund
+ * @author James Maroulis
+ * @author Sean Sirur
+ */
 public class NBody {
 	// Simulation parameters, defaulted to 0
 	// Number of timesteps
@@ -167,7 +178,13 @@ public class NBody {
 	 * Static methods
 	 */
 
-		//return GPE for two particles
+	/**
+	 * Calculates the Gravitational Potential Energy due to the configuration of two Particle3D objects.
+	 *
+	 * @param a - Particle3D a
+	 * @param b - Particle3D b
+	 * @return Double representing GPE value.
+	 */
 	public static double potentialEnergy(Particle3D a, Particle3D b){
 
 		Vector3D r = Particle3D.particleSeparation(a,b);
@@ -178,6 +195,13 @@ public class NBody {
 
 	}
 
+	/**
+	 * Calculates the Newtonian Gravitational Force between two Particle3D objects.
+	 *
+	 * @param a - Particle3D a
+	 * @param b - Particle3D b
+	 * @return Vector3D representing g-force of b upon a.
+	 */
 	//Return gravitational force vector on a by b
 	public static Vector3D gForce(Particle3D a, Particle3D b){
 		Vector3D force;
@@ -189,6 +213,12 @@ public class NBody {
 		return force;
 	}
 
+	/**
+	 * Calculates the Total Gravitational Force acting upon each body of an N-body Particle3D array due to all others.
+	 *
+	 * @param particles - Array of Particle3D objects.
+	 * @return Vector3D array; Array element i represents gforce vector upon element i in particles array.
+	 */
 	public static Vector3D[] totalInteractionForces(Particle3D[] particles){
 		Vector3D[] forces = new Vector3D[particles.length];
 
@@ -208,7 +238,12 @@ public class NBody {
 		return forces;
 	}
 
-	//Return the total energy of the system of particles
+	/**
+	 * Calculates the total energy of an N-Body array of Particle3D objects as the sum of total kinetic and
+	 * total potential energies.
+	 * @param particles - Array of Particle3D objects.
+	 * @return Double representing total particle energy.
+	 */
 	public static double totalEnergy(Particle3D[] particles){
 		double totalKinetic = 0.0;
 		double totalPotential = 0.0;
@@ -229,21 +264,40 @@ public class NBody {
 		return totalKinetic + totalPotential;
 	}
 
-	//Leap the velocities of an ArrayList of particles using an ArrayList of forces
+	/**
+	 * Convenience method; applies Particle3D.leapVelocity() to each object in a Particle3D array.
+	 * Particles array element i will be acted upon by forces array element i.
+	 *
+	 * @param particles - Particle3D array.
+	 * @param forces - Vector3D array of forces.
+	 * @param dt - Timestep Value
+	 */
 	public static void leapVelocities(Particle3D[] particles, Vector3D[] forces, double dt){
 		for(int i=0;i<particles.length;i++){
 			particles[i].leapVelocity(forces[i], dt);
 		}
 	}
 
-	//Leap the positions of an ArrayList of particles using an ArrayList of forces
+	/**
+	 * Convenience method; applies Particle3D.leapPosition() to each object in a Particle3D array.
+	 * particles array element i will be acted upon by forces array element i.
+	 *
+	 * @param particles - Particle3D array.
+	 * @param forces - Vector3D array of forces.
+	 * @param dt - Timestep Value.
+	 */
 	public static void leapPositions(Particle3D[] particles, Vector3D[] forces, double dt){
 		for(int i=0;i<particles.length;i++){
 			particles[i].leapPosition(forces[i], dt);
 		}
 	}
 
-	//Convenience method for computing the element-wise average of two equally sized ArrayLists
+	/**
+	 * Averages i elements of two equally sized Vector3D arrays, creating a new Vector3D array from the results.
+	 * @param a - Vector3D array a.
+	 * @param b - Vector3D array b.
+	 * @return - Average Vector3D array.
+	 */
 	public static Vector3D[] elementAverage(Vector3D[] a, Vector3D[] b){
 		if(a.length == b.length) {
 			Vector3D[] averages = new Vector3D[a.length];
@@ -258,6 +312,13 @@ public class NBody {
 		}
 	}
 
+	//TODO: Finish JavaDoc from here onwards
+	/**
+	 *
+	 * @param particles
+	 * @param pointNum
+	 * @param printWriter
+	 */
 	//Write the coordinates of all particles to a file in VMD format
 	public static void writePointsToFile(Particle3D[] particles, int pointNum, PrintWriter printWriter){
 		printWriter.write(String.format("%d\n", particles.length));
@@ -267,6 +328,11 @@ public class NBody {
 		}
 	}
 
+	/**
+	 *
+	 * @param particles
+	 * @return
+	 */
 	//Computes the radial velocity components compared to the origin for an array of particles
 	public static double[] radialVelocityComponents(Particle3D[] particles){
 		Vector3D radialVector;
@@ -279,6 +345,14 @@ public class NBody {
 		return radialVelocityComponents;
 	}
 
+	/**
+	 *
+	 * @param particles
+	 * @param radialVelocityComponentOld
+	 * @param radialVelocityComponentNew
+	 * @param aphelions
+	 * @param perihelions
+	 */
 	//Updates the array containing apsis values (passed by reference) by checking for a change of sign in the radial
 	//velocity component
 	public static void checkApses(Particle3D[] particles, double[] radialVelocityComponentOld, double[] radialVelocityComponentNew
