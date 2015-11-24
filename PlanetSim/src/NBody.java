@@ -1,15 +1,3 @@
-/** 
- * This code is to simulate the orbital motion of an N-body system due to gravitational forces,
- * with functionality in place to track numbers of orbits, orbital period,
- * and apoapsis/periapsis of each body, each assumed to be exhibiting orbital behaviour.
- * 
- * Included are several methods for the calculation of relevant physical quantities,
- * and several convenience methods for the application of various Vector3D and Particle3D methods to array formats.
- * 
- * @author Sebastiaan van de Bund
- * @author James Maroulis
- * @author Sean Sirur
- */
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -27,6 +15,7 @@ public class NBody {
 	// Gravitational Constant
 	static double g = 0.0;
 
+
 	public static void main (String[] argv) throws IOException {
 		// Initial time
 		double t = 0.0;
@@ -35,42 +24,53 @@ public class NBody {
 		//Read the particles and initial conditions from file
 		//TODO: figure out a nice format for particles and maybe change the particle3D method a bit
 		Particle3D[] particles = Particle3D.readFile(argv[0]);
+		//Array containing only the heliocentric bodies
+		Particle3D[] heliocentricParticles = getHeliocentricBodies(particles);
 
 		//Read the initial conditions from file
 		Properties param = new Properties();
 		param.load(new FileReader(argv[1]));
 		Set<String> properties = param.stringPropertyNames();
-		if(properties.contains("iterations")){
+		if (properties.contains("iterations")) {
 			iterations = Integer.parseInt(param.getProperty("iterations"));
 		}
-		if(properties.contains("timestep")){
+		if (properties.contains("timestep")) {
 			dt = Double.parseDouble(param.getProperty("timestep"));
 		}
-		if(properties.contains("gravconstant")){
+		if (properties.contains("gravconstant")) {
 			g = Double.parseDouble(param.getProperty("gravconstant"));
 		}
 
 		//Create output file
 		PrintWriter trajectoryOutput = new PrintWriter(new FileWriter(argv[2]));
 
-		// Variables used for analysis
-		// Array containing the calculated values of the aphelions for all the planets and pluto
-		double[] aphelions = new double[particles.length];
-		for(int i=0;i<aphelions.length;i++){
-			aphelions[i]=0.0;
-		}
-		// Array containing the calculated values of the perihelions for all the planets and pluto
-		double[] perihelions = new double[particles.length];
-		for(int i=0;i<aphelions.length;i++){
-			perihelions[i]=0.0;
-		}
-		double lowestEnergy = Double.POSITIVE_INFINITY;
-		double highestEnergy = Double.NEGATIVE_INFINITY;
-
 		// Current forces at time t acting on all of the particles
 		Vector3D[] currentForces;
 		// New forces at time t+dt acting on all of the particles
 		Vector3D[] newForces;
+
+		/*
+		 * Special indices and arrays for algorithms operating on specific bodies
+		 */
+		// Check for moon and assign index if present, otherwise set it to -1
+		int lunaIndex = findParticle(particles, "Luna");
+		// Check for moon and assign index if present
+		int earthIndex = findParticle(particles, "Earth");
+		// Store the index of the sun
+		int solIndex = findParticle(particles, "Sol");
+
+		/*
+		 * Variables dealing with analysis
+		 */
+		// Store the indices of all heliocentric bodies
+		double[] heliocentricOrbits = new double[heliocentricParticles.length];
+		double lunarOrbit = 0.0;
+		// Array containing the calculated values of the aphelions for all the planets and pluto
+		double[] aphelions = new double[heliocentricParticles.length];
+		// Array containing the calculated values of the perihelions for all the planets and pluto
+		double[] perihelions = new double[heliocentricParticles.length];
+		double lowestEnergy = Double.POSITIVE_INFINITY;
+		double highestEnergy = Double.NEGATIVE_INFINITY;
 
 		// Compute initial forces
 		currentForces = totalInteractionForces(particles);
@@ -78,17 +78,30 @@ public class NBody {
 		//Write initial positions to file
 		writePointsToFile(particles, 1, trajectoryOutput);
 
-		for(int n=0;n<iterations;n++) {
+
+		/*
+		 * Main algorithm
+		 */
+		for (int n=0; n<iterations; n++) {
 			//Calculate progress
-			if(n%(iterations/10) == 0){
-				System.out.printf("Progress: %.0f%%\n", (float)n/(float)iterations * 100.f);
+			if (n % (iterations / 20) == 0) {
+				System.out.printf("Progress: %.0f%%\n", (float) n / (float) iterations * 100.f);
 			}
 
 			double[] radialVelocityComponentsOld;
 			double[] radialVelocityComponentsNew;
+			Vector3D[] heliocentricPositionsOld;
+			Vector3D[] heliocentricPositionsNew;
+			Vector3D lunarPositionOld = new Vector3D();
+			Vector3D lunarPositionNew = new Vector3D();
 
 			// Compute radial velocity components before update
-			radialVelocityComponentsOld = radialVelocityComponents(particles);
+			radialVelocityComponentsOld = radialVelocityComponents(heliocentricParticles);
+			// Compute positions before position update
+			heliocentricPositionsOld = getPositions(heliocentricParticles);
+			if(lunaIndex != -1) {
+				lunarPositionOld = Vector3D.subtract(particles[lunaIndex].getPosition(), particles[earthIndex].getPosition());
+			}
 
 			// Leap all the particle positions
 			leapPositions(particles, currentForces, dt);
@@ -103,23 +116,31 @@ public class NBody {
 			currentForces = newForces;
 
 			// Recompute the radial velocity components at time t+dt
-			radialVelocityComponentsNew = radialVelocityComponents(particles);
+			radialVelocityComponentsNew = radialVelocityComponents(heliocentricParticles);
+			// Compute positions after position update, i.e. t+dt
+			heliocentricPositionsNew = getPositions(heliocentricParticles);
+			if(lunaIndex != -1) {
+				lunarPositionNew = Vector3D.subtract(particles[lunaIndex].getPosition(), particles[earthIndex].getPosition());
+			}
 
-			// Calculate total energy and monitor energy fluctuations
-			double totalEnergy = totalEnergy(particles);
-			if(totalEnergy < lowestEnergy){
-				lowestEnergy = totalEnergy;
-			}
-			if(totalEnergy > highestEnergy){
-				highestEnergy = totalEnergy;
-			}
+			incrementHeliocentricOrbits(heliocentricPositionsOld, heliocentricPositionsNew, heliocentricOrbits);
+			incrementLunarOrbit(lunarPositionOld, lunarPositionNew, lunarOrbit);
 
 			//TODO: add functionality to apply this to specific planets rather than every body in the system
 			// Check whether apses has been passed
-			checkApses(particles, radialVelocityComponentsOld, radialVelocityComponentsNew, aphelions, perihelions);
+			checkApses(heliocentricParticles, radialVelocityComponentsOld, radialVelocityComponentsNew, aphelions, perihelions);
+
+			// Calculate total energy and monitor energy fluctuations
+			double totalEnergy = totalEnergy(particles);
+			if (totalEnergy < lowestEnergy) {
+				lowestEnergy = totalEnergy;
+			}
+			if (totalEnergy > highestEnergy) {
+				highestEnergy = totalEnergy;
+			}
 
 			// Print output to file every 10 iterations
-			if(n%20 == 0) {
+			if (n % 80 == 0) {
 				writePointsToFile(particles, n + 1, trajectoryOutput);
 			}
 
@@ -127,11 +148,16 @@ public class NBody {
 			t += dt;
 		}
 
-		for(int i=0;i<aphelions.length;i++) {
-			System.out.printf("aphelion = %f,   perihelion = %f\n", aphelions[i], perihelions[i]);
+		System.out.println("\n--Aphelions and Perihelions--");
+		for (int i=0; i<aphelions.length; i++) {
+			System.out.printf("%s: ap = %f   pe = %f\n", heliocentricParticles[i].getName() ,aphelions[i], perihelions[i]);
 		}
 
-		System.out.println(Math.abs(highestEnergy-lowestEnergy)/Math.abs((highestEnergy+lowestEnergy)/2.0));
+		System.out.println("\n--Number of Orbits and Periods--");
+		for(int i=0; i<heliocentricOrbits.length;i++){
+			System.out.printf("%s: %f orbits   -->   T = %f days = %f years\n", heliocentricParticles[i].getName(),
+									heliocentricOrbits[i], t/heliocentricOrbits[i], t/heliocentricOrbits[i]/365.25);
+		}
 
 		trajectoryOutput.close();
 	}
@@ -140,15 +166,8 @@ public class NBody {
 	/*
 	 * Static methods
 	 */
-	 
-	/**
-	 * Calculates Gravitational Potential Energy of two Particle3D objects.
-	 * 
-	 * @param a - Particle3D a
-	 * @param b - Particle3D b
-	 * @return Double representing GPE value.
-	 */
-	//return GPE for two particles
+
+		//return GPE for two particles
 	public static double potentialEnergy(Particle3D a, Particle3D b){
 
 		Vector3D r = Particle3D.particleSeparation(a,b);
@@ -158,14 +177,7 @@ public class NBody {
 		return -g * ma * mb * (1.0/rmag);
 
 	}
-	
-	/**
-	 * Calculates Gravitational Force between two Particle3D objects.
-	 * 
-	 * @param a - Particle3D a
-	 * @param b - Particle3D b
-	 * @return Vector3D representing g-force of b upon a.
-	 */
+
 	//Return gravitational force vector on a by b
 	public static Vector3D gForce(Particle3D a, Particle3D b){
 		Vector3D force;
@@ -177,12 +189,6 @@ public class NBody {
 		return force;
 	}
 
-	/**
-	 * Calculates the Total Gravitational Force acting upon each body of an N-body PArticle3D array due to those N bodies.
-	 * 
-	 * @param particles - Array of Particle3D objects.
-	 * @return Vector3D array; Array element i represents gforce vector upon element i in particles array.
-	 */
 	public static Vector3D[] totalInteractionForces(Particle3D[] particles){
 		Vector3D[] forces = new Vector3D[particles.length];
 
@@ -202,11 +208,6 @@ public class NBody {
 		return forces;
 	}
 
-	/**
-	 * Calculates the total energy of an N-Body array of Particle3D objects.
-	 * @param particles - Array of Particle3D objects.
-	 * @return Double representing total particle energy.
-	 */
 	//Return the total energy of the system of particles
 	public static double totalEnergy(Particle3D[] particles){
 		double totalKinetic = 0.0;
@@ -221,21 +222,13 @@ public class NBody {
 		for(int i=0;i<particles.length;i++){
 			for(int j=0;j<i-1;j++){
 				totalPotential+= -1.0 * g * particles[i].getMass() * particles[j].getMass()
-										/ Particle3D.particleSeparation(particles[i], particles[j]).mag();
+						/ Particle3D.particleSeparation(particles[i], particles[j]).mag();
 			}
 		}
 
 		return totalKinetic + totalPotential;
 	}
 
-	/**
-	 * Convenience method; applies Particle3D.leapVelocity to each object in a Particle3D array.
-	 * particles array element i will be acted upon by forces array element i.
-	 * 
-	 * @param particles - Particle3D array.
-	 * @param forces - Vector3D array of forces.
-	 * @param dt - Timestep Value
-	 */
 	//Leap the velocities of an ArrayList of particles using an ArrayList of forces
 	public static void leapVelocities(Particle3D[] particles, Vector3D[] forces, double dt){
 		for(int i=0;i<particles.length;i++){
@@ -243,14 +236,6 @@ public class NBody {
 		}
 	}
 
-	/**
-	 * Convenience method; applies Particle3D.leapPosition to each object in a Particle3D array.
-	 * particles array element i will be acted upon by forces array element i.
-	 * 
-	 * @param particles - Particle3D array.
-	 * @param forces - Vector3D array of forces.
-	 * @param dt - Timestep Value.
-	 */
 	//Leap the positions of an ArrayList of particles using an ArrayList of forces
 	public static void leapPositions(Particle3D[] particles, Vector3D[] forces, double dt){
 		for(int i=0;i<particles.length;i++){
@@ -258,12 +243,6 @@ public class NBody {
 		}
 	}
 
-	/**
-	 * Averages i elements of two Vector3D arrays, creates a new Vector3D array from the results.
-	 * @param a - Vector3D array a.
-	 * @param b - Vector3D array b.
-	 * @return - Average Vector3D array.
-	 */
 	//Convenience method for computing the element-wise average of two equally sized ArrayLists
 	public static Vector3D[] elementAverage(Vector3D[] a, Vector3D[] b){
 		if(a.length == b.length) {
@@ -279,13 +258,6 @@ public class NBody {
 		}
 	}
 
-//TODO: Finish JavaDoc from here onwards
-	/**
-	 * 
-	 * @param particles
-	 * @param pointNum
-	 * @param printWriter
-	 */
 	//Write the coordinates of all particles to a file in VMD format
 	public static void writePointsToFile(Particle3D[] particles, int pointNum, PrintWriter printWriter){
 		printWriter.write(String.format("%d\n", particles.length));
@@ -295,11 +267,6 @@ public class NBody {
 		}
 	}
 
-	/**
-	 * 
-	 * @param particles
-	 * @return
-	 */
 	//Computes the radial velocity components compared to the origin for an array of particles
 	public static double[] radialVelocityComponents(Particle3D[] particles){
 		Vector3D radialVector;
@@ -312,32 +279,80 @@ public class NBody {
 		return radialVelocityComponents;
 	}
 
-	/**
-	 * 
-	 * @param particles
-	 * @param radialVelocityComponentOld
-	 * @param radialVelocityComponentNew
-	 * @param aphelions
-	 * @param perihelions
-	 */
 	//Updates the array containing apsis values (passed by reference) by checking for a change of sign in the radial
 	//velocity component
 	public static void checkApses(Particle3D[] particles, double[] radialVelocityComponentOld, double[] radialVelocityComponentNew
-														, double[] aphelions, double[] perihelions){
-		boolean[] isAphelion = new boolean[radialVelocityComponentOld.length];
-		boolean[] isPerihelion = new boolean[radialVelocityComponentOld.length];
-
+			, double[] aphelions, double[] perihelions){
 		for(int i=0;i<radialVelocityComponentOld.length;i++){
 			if((radialVelocityComponentOld[i] > 0.0) && (radialVelocityComponentNew[i] < 0.0)){
-				if(aphelions[i] == 0) {
-					aphelions[i] = particles[i].getPosition().mag();
-				}
+				aphelions[i] = particles[i].getPosition().mag();
 			}
 			if((radialVelocityComponentOld[i] < 0.0) && (radialVelocityComponentNew[i] > 0.0)){
-				if(perihelions[i] == 0) {
-					perihelions[i] = particles[i].getPosition().mag();
-				}
+				perihelions[i] = particles[i].getPosition().mag();
 			}
 		}
+	}
+
+	//Increments the partial orbits for heliocentric orbits
+	public static void incrementHeliocentricOrbits(Vector3D[] oldPositions, Vector3D[] newPositions, double[] heliocentricOrbits){
+		for(int i=0;i<heliocentricOrbits.length;i++){
+			heliocentricOrbits[i] += Math.acos(Vector3D.dot(oldPositions[i], newPositions[i])
+					/(oldPositions[i].mag()*newPositions[i].mag()))/(2.0*Math.PI);
+		}
+	}
+
+	//Increments the partial orbits for the moon's geocentric orbit
+	public static void incrementLunarOrbit(Vector3D oldPosition, Vector3D newPosition, double lunarOrbit){
+		lunarOrbit += Math.acos(Vector3D.dot(oldPosition, newPosition)
+				/(oldPosition.mag()*newPosition.mag()))/(2.0*Math.PI);
+	}
+
+    // Find the index of a planet or moon in the particles array, and if not found return -1
+	public static int findParticle(Particle3D[] particles, String name) {
+		for(int i=0;i<particles.length;i++){
+			if(particles[i].getName().equals(name)){
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	//Return an array of positions from an array of particles
+	public static Vector3D[] getPositions(Particle3D[] particles){
+		Vector3D[] positions = new Vector3D[particles.length];
+		for(int i=0;i<particles.length;i++){
+			positions[i] = particles[i].getPosition();
+		}
+		return positions;
+	}
+
+	// Return an array of all heliocentric bodies
+	public static Particle3D[] getHeliocentricBodies(Particle3D[] particles){
+		int heliocentricBodiesNum = 0;
+		boolean[] isHeliocentrics = new boolean[particles.length];
+		for(int i=0;i<particles.length;i++){
+			if(isHeliocentric(particles[i].getName())){
+				heliocentricBodiesNum++;
+				isHeliocentrics[i] = true;
+			} else {
+				isHeliocentrics[i] = false;
+			}
+		}
+		Particle3D[] heliocentricBodies = new Particle3D[heliocentricBodiesNum];
+		int k=-1;
+		for(int i=0;i<isHeliocentrics.length;i++){
+			if(isHeliocentrics[i]){
+				//Assign the reference so that their overlap refers to the same particles
+				heliocentricBodies[++k] = particles[i];
+			}
+		}
+		return heliocentricBodies;
+	}
+
+	//Helper method for getHeliocentricBodies()
+	public static boolean isHeliocentric(String name){
+		return name.equals("Mercury") || name.equals("Venus") || name.equals("Earth") || name.equals("Mars")
+				|| name.equals("Jupiter") || name.equals("Saturn") || name.equals("Uranus") || name.equals("Neptune")
+				|| name.equals("Pluto") || name.equals("1P/Halley");
 	}
 }
