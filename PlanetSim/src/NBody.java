@@ -16,6 +16,8 @@ import java.util.Set;
  * @author Sebastiaan van de Bund
  * @author James Maroulis
  * @author Sean Sirur
+ *
+ * @version "24/11/2015"
  */
 public class NBody {
 	// Simulation parameters, defaulted to 0
@@ -31,9 +33,7 @@ public class NBody {
 		// Initial time
 		double t = 0.0;
 
-
 		//Read the particles and initial conditions from file
-		//TODO: figure out a nice format for particles and maybe change the particle3D method a bit
 		Particle3D[] particles = Particle3D.readFile(argv[0]);
 		//Array containing only the heliocentric bodies
 		Particle3D[] heliocentricParticles = getHeliocentricBodies(particles);
@@ -71,14 +71,14 @@ public class NBody {
 		int solIndex = findParticle(particles, "Sol");
 
 		/*
-		 * Variables dealing with analysis
+		 * Variables dealing with analysis of orbits, perihelions, aphelions and energy fluctuations
 		 */
 		// Store the indices of all heliocentric bodies
 		double[] heliocentricOrbits = new double[heliocentricParticles.length];
-		double lunarOrbit = 0.0;
-		// Array containing the calculated values of the aphelions for all the planets and pluto
+		double[] lunarOrbit = new double[1];
+		// Array containing the calculated values of the aphelions for all heliocentric particles
 		double[] aphelions = new double[heliocentricParticles.length];
-		// Array containing the calculated values of the perihelions for all the planets and pluto
+		// Array containing the calculated values of the perihelions for all heliocentric particles
 		double[] perihelions = new double[heliocentricParticles.length];
 		double lowestEnergy = Double.POSITIVE_INFINITY;
 		double highestEnergy = Double.NEGATIVE_INFINITY;
@@ -94,11 +94,12 @@ public class NBody {
 		 * Main algorithm
 		 */
 		for (int n=0; n<iterations; n++) {
-			//Calculate progress
-			if (n % (iterations / 20) == 0) {
+			// Calculate and display progress
+			if ((n+1) % (iterations / 20) == 0) {
 				System.out.printf("Progress: %.0f%%\n", (float) n / (float) iterations * 100.f);
 			}
 
+			//Old and new data used for analysis of aphelions, perihelions and orbits
 			double[] radialVelocityComponentsOld;
 			double[] radialVelocityComponentsNew;
 			Vector3D[] heliocentricPositionsOld;
@@ -135,9 +136,10 @@ public class NBody {
 			}
 
 			incrementHeliocentricOrbits(heliocentricPositionsOld, heliocentricPositionsNew, heliocentricOrbits);
-			incrementLunarOrbit(lunarPositionOld, lunarPositionNew, lunarOrbit);
+			if(lunaIndex != -1) {
+				incrementLunarOrbit(lunarPositionOld, lunarPositionNew, lunarOrbit);
+			}
 
-			//TODO: add functionality to apply this to specific planets rather than every body in the system
 			// Check whether apses has been passed
 			checkApses(heliocentricParticles, radialVelocityComponentsOld, radialVelocityComponentsNew, aphelions, perihelions);
 
@@ -151,7 +153,7 @@ public class NBody {
 			}
 
 			// Print output to file every 10 iterations
-			if (n % 80 == 0) {
+			if (n % 10 == 0) {
 				writePointsToFile(particles, n + 1, trajectoryOutput);
 			}
 
@@ -159,16 +161,43 @@ public class NBody {
 			t += dt;
 		}
 
+		/*
+		 * Display results of the analysis
+		 */
+		//Energy fluctuations, assuming the real energy is roughly the average of the lowest and highest energy
+		System.out.println("\n--Energy Fluctuations--");
+		System.out.printf("Global energy fluctuation: %.9f,  Relative error estimation: %f\n", Math.abs(highestEnergy-lowestEnergy),
+				Math.abs(highestEnergy-lowestEnergy)/(Math.abs(highestEnergy+lowestEnergy)/2.0));
+
+		// Aphelion and perihelion of heliocentric bodies
 		System.out.println("\n--Aphelions and Perihelions--");
 		for (int i=0; i<aphelions.length; i++) {
-			System.out.printf("%s: ap = %f   pe = %f\n", heliocentricParticles[i].getName() ,aphelions[i], perihelions[i]);
+			System.out.printf("%s: ap = %f   pe = %f\n", heliocentricParticles[i].getName(), aphelions[i], perihelions[i]);
 		}
 
+		// Total partial orbits and orbital periods for heliocentric bodies and the moon
 		System.out.println("\n--Number of Orbits and Periods--");
 		for(int i=0; i<heliocentricOrbits.length;i++){
 			System.out.printf("%s: %f orbits   -->   T = %f days = %f years\n", heliocentricParticles[i].getName(),
 									heliocentricOrbits[i], t/heliocentricOrbits[i], t/heliocentricOrbits[i]/365.25);
 		}
+		if(lunaIndex != -1) {
+			System.out.printf("%s: %f orbits   -->   T = %f days = %f years\n", particles[lunaIndex].getName(),
+					lunarOrbit[0], t / lunarOrbit[0], t / lunarOrbit[0] / 365.25);
+		}
+
+		// Verification of Kepler's 3rd Law
+		System.out.println("\n--Kepler's 3rd Law--");
+		for(int i=0;i<heliocentricOrbits.length;i++){
+			double a = (aphelions[i]+perihelions[i])/2.0;
+			System.out.printf("%s: T^2/a^3 = %.3f days^2/AU^3\n", heliocentricParticles[i].getName(),
+																t/heliocentricOrbits[i]*t/heliocentricOrbits[i]/(a*a*a));
+		}
+
+		// Print the ratio between the years of Mercury and Venus
+		System.out.println("\n--Ratio of Mercury and Venus Periods--");
+		System.out.printf("T_ven/T_mer = %f\n", heliocentricOrbits[2]/heliocentricOrbits[1]);
+
 
 		trajectoryOutput.close();
 	}
@@ -177,7 +206,6 @@ public class NBody {
 	/*
 	 * Static methods
 	 */
-
 	/**
 	 * Calculates the Gravitational Potential Energy due to the configuration of two Particle3D objects.
 	 *
@@ -376,8 +404,9 @@ public class NBody {
 	}
 
 	//Increments the partial orbits for the moon's geocentric orbit
-	public static void incrementLunarOrbit(Vector3D oldPosition, Vector3D newPosition, double lunarOrbit){
-		lunarOrbit += Math.acos(Vector3D.dot(oldPosition, newPosition)
+	//lunarOrbit is only an array in order to allow it to be passed by reference
+	public static void incrementLunarOrbit(Vector3D oldPosition, Vector3D newPosition, double[] lunarOrbit){
+		lunarOrbit[0] += Math.acos(Vector3D.dot(oldPosition, newPosition)
 				/(oldPosition.mag()*newPosition.mag()))/(2.0*Math.PI);
 	}
 

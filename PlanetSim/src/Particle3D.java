@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  * @author James Maroulis
  * @author Sean Sirur
  *
- * @version "26/10/2015"
+ * @version "24/11/2015"
  */
 
 public class Particle3D {
@@ -179,14 +179,23 @@ public class Particle3D {
     /**
      * Reads the contents of a file and returns it in the form of an ArrayList of Particle3D objects.
      *
-     * The file must contain 1 name and 7 numbers per line, and each line will give one particle:
-     * The first number gives the mass.
-     * The next three numbers give the initial position.
-     * The last three numbers give the initial velocity.
+     * The file must contain data in the following format:
+     *
+     * [Name]:
+     * M=[mass]
+     * X=[x position] Y=[y position] Z=[z position]
+     * VX=[x velocity] VY=[y velocity] VZ=[z velocity]
+     *
+     * e.g.:
+     *
+     * Bartledan:
+     * M=6789
+     * X=1.234 Y=1.234 Z=1.234
+     * VX=4.321 VY=4.321 VZ=4.321
+     *
      *
      * @param filename the name of the file from which the contents will be read
      */
-    //TODO: cleanup this method + documentation
     public static Particle3D[] readFile(String filename) throws IOException {
         BufferedReader bufferedReader = new BufferedReader(new FileReader(filename));
         Scanner scanner = new Scanner(bufferedReader);
@@ -194,12 +203,6 @@ public class Particle3D {
         //Read the first line, which is the number of particles
         int particleNum = Integer.parseInt(scanner.next());
         Particle3D[] particles = new Particle3D[particleNum];
-
-        /*
-        //Check whether there is a next line, read the name and 7 numbers, store them in a new Particle3D
-        for(int i=0;i<particles.length;i++){
-            particles[i] = new Particle3D(scanner.next(), scanner.nextDouble(), new Vector3D(scanner.nextDouble(), scanner.nextDouble(), scanner.nextDouble()), new Vector3D(scanner.nextDouble(), scanner.nextDouble(), scanner.nextDouble()));
-        }*/
 
         int i=-1;
         while(scanner.hasNextLine()){
