@@ -364,7 +364,7 @@ public class NBody {
 	}
 
 	/**
-	 * Convenience method; applies Particle3D.leapVelocity() to each object in a Particle3D array.
+	 * Applies Particle3D.leapVelocity() to each object in a Particle3D array.
 	 * Particles array element i will be acted upon by forces array element i.
 	 *
 	 * @param particles - Particle3D array.
@@ -378,7 +378,7 @@ public class NBody {
 	}
 
 	/**
-	 * Convenience method; applies Particle3D.leapPosition() to each object in a Particle3D array.
+	 * Applies Particle3D.leapPosition() to each object in a Particle3D array.
 	 * particles array element i will be acted upon by forces array element i.
 	 *
 	 * @param particles - Particle3D array.
@@ -444,7 +444,7 @@ public class NBody {
 	 * Calculates an array of the radial velocity components of an array of particles, which can be positive (radially
 	 * outwards) or negative (radially inwards).
 	 *
-	 * @param particles - The particles from which the radial velocity components will be calculated
+	 * @param particles - The particles array from which the radial velocity components will be calculated
 	 * @return - An array of radial velocity components.
 	 */
 	public static double[] radialVelocityComponents(Particle3D[] particles){
@@ -524,9 +524,9 @@ public class NBody {
 	 * Finds a particle's index by name. It checks whether an array of particles contains a particle with a certain
 	 * name, and returns its index in the particles array. If it was not found, it returns -1.
 	 *
-	 * @param particles
-	 * @param name
-	 * @return
+	 * @param particles - The array of particles in which the name is searched for.
+	 * @param name - The name to search for.
+	 * @return - The index of the particle if found, or -1 if not found.
      */
 	public static int findParticle(Particle3D[] particles, String name) {
 		for(int i=0;i<particles.length;i++){
@@ -540,7 +540,7 @@ public class NBody {
 	/**
 	 * Returns an array of position vectors from an array of particles.
 	 *
-	 * @param particles - The list of particles from which the positions should be taken.
+	 * @param particles - The array of particles from which the positions should be taken.
 	 * @return - The array of position vectors.
      */
 	public static Vector3D[] getPositions(Particle3D[] particles){
@@ -552,10 +552,11 @@ public class NBody {
 	}
 
 	/**
-	 * Returns a list of
+	 * Returns an array of particles containing references to the particles in the system that are specifically
+	 * heliocentric.
 	 *
-	 * @param particles
-	 * @return
+	 * @param particles - The array of particles from which the heliocentric bodies should be found.
+	 * @return - An array of the references to the specifically heliocentric particles.
      */
 	public static Particle3D[] getHeliocentricBodies(Particle3D[] particles){
 		int heliocentricBodiesNum = 0;
