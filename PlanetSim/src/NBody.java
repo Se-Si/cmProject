@@ -6,12 +6,36 @@ import java.util.Properties;
 import java.util.Set;
 
 /**
- * This code is to simulate the orbital motion of an N-body system due to gravitational forces,
- * with functionality in place to track numbers of orbits, orbital period,
- * and apoapsis/periapsis of each body, each assumed to be exhibiting orbital behaviour.
+ * This code simulates the orbital motion of an N-body system due to Newtonian gravitational forces,
+ * with functionality in place to track numbers of orbits over the course of the simulation, orbital period,
+ * and aphelion/perihelion for heliocentric bodies. Furthermore, it also calculates the total system energy and its
+ * fluctuation as a means of error estimation.
  *
  * Included are several methods for the calculation of relevant physical quantities,
- * and several convenience methods for the application of various Vector3D and Particle3D methods to array formats.
+ * and several convenience methods such as array operations for calculations involving arrays of Vector3D and Particle3D.
+ *
+ * Since the simulation takes place on the scale of the solar system, the units chosen in this simulation are:
+ * length -- AU (= 149597870700 m)
+ * mass -- Earth masses (= 5.97219E24 kg)
+ * time -- Days (= 86400 s)
+ *
+ * In this system of units, the gravitational constant takes a value of G=8.888029468297E-10.
+ *
+ * Three sets of initial conditions have been included. All real values were found using the JPL HORIZONS ephemeris at
+ * time 2000-Jan-01 00:00:00.0000.
+ * threeBodyCircular contains files for a 3-body system with the Sun, Mercury and Venus with realistic masses and orbital radii
+ * but calculated to follow a circular orbit (and also corrected for Centre of Mass momentum to stop the system from
+ * drifting).
+ * threeBodyElliptical has files for a 3-body system with data from the ephemeris to simulate the same 3 body system
+ * but this time with real values giving elliptical orbits.
+ * solarSystem has files for a 12-body system containing data from the ephemeris for the sun (Sol), all the planets,
+ * pluto, the Earth's moon (Luna) and Halley's Comet (1P/Halley).
+ *
+ * This simulation distinguishes between heliocentric and non-heliocentric bodies. Supported heliocentric bodies are:
+ * Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto and 1P/Halley. The simulation supports
+ * calculating aphelions/perihelions, partial orbits and verifying Kepler's 3rd Law for any of these heliocentric bodies
+ * that might be present. The sun is assumed to be always present and remaining very near the origin. The simulation
+ * also supports simulating the Moon (Luna) if included, and calculating its geocentric partial orbits and period.
  *
  * @author Sebastiaan van de Bund
  * @author James Maroulis
@@ -28,7 +52,54 @@ public class NBody {
 	// Gravitational Constant
 	static double g = 0.0;
 
-
+	/**
+	 * This method contains the velocity verlet integrator. It must take three arguments as argv[], being the following:
+	 * argv[0] must be the path to the list of particles and initial properties.
+	 * argv[1] must be the path to the parameter input file.
+	 * argv[2] must be the name of the trajectory output file.
+	 *
+	 * The list of particles input file must list particles in the following format, with the total amount of bodies
+	 * written at the top:
+	 *
+	 * [total amount of particles]
+	 *
+	 * [Name1]:
+	 * M=[mass1]
+	 * X=[x1 position] Y=[y1 position] Z=[z1 position]
+	 * VX=[x1 velocity] VY=[y1 velocity] VZ=[z1 velocity]
+	 *
+	 * [Name2]:
+	 * M=[mass2]
+	 * X=[x2 position] Y=[y2 position] Z=[z2 position]
+	 * VX=[x2 velocity] VY=[y2 velocity] VZ=[z2 velocity]
+	 *
+	 * ...
+	 *
+	 *
+	 * The parameter input file must contain three properties:
+	 *
+	 * iterations=[total number of iterations]
+	 * timestep=[discrete time step in Days]
+	 * gravconstant=[value of the gravitational constant]
+	 *
+	 *
+	 * Finally, the output file must end in .xyz as it outputs trajectory data in VMD compatible format.
+	 *
+	 *
+	 * In the main loop, only 1 in every 10 iterations writes the trajectory output to a file.
+	 *
+	 * At the end it displays the results of the in-loop analysis:
+	 * --Energy fluctuations
+	 * --Aphelions and perihelions
+	 * --Total number of orbits and orbital periods where the Sun is assumed to be and stay at the origin.
+	 * --Verification of Kepler's 3rd Law, i.e. the period squared divided by the semimajor axis cubed
+	 * --The ratio of the innermost two planets, Mercury and Venus
+	 *
+	 *
+	 * @param argv - The arguments of the program containing the path to the two input files and name of the
+	 *                trajectory output file.
+	 * @throws IOException
+     */
 	public static void main (String[] argv) throws IOException {
 		// Initial time
 		double t = 0.0;
@@ -196,7 +267,7 @@ public class NBody {
 
 		// Print the ratio between the years of Mercury and Venus
 		System.out.println("\n--Ratio of Mercury and Venus Periods--");
-		System.out.printf("T_ven/T_mer = %f\n", heliocentricOrbits[2]/heliocentricOrbits[1]);
+		System.out.printf("T_ven/T_mer = %f\n", heliocentricOrbits[1]/heliocentricOrbits[0]);
 
 
 		trajectoryOutput.close();
@@ -340,14 +411,27 @@ public class NBody {
 		}
 	}
 
-	//TODO: Finish JavaDoc from here onwards
 	/**
+	 * Writes trajectory data for all particles during a specific iteration to a file in VMD format, being:
 	 *
-	 * @param particles
-	 * @param pointNum
-	 * @param printWriter
+	 * [total number of points]
+	 * Point = 1
+	 * [nqme1] [x1_1] [y1_1] [z1_1]
+	 * [nqme2] [x2_1] [y2_1] [z2_1]
+	 * [total number of points]
+	 * Point = 2
+	 * [nqme1] [x1_1] [y1_1] [z1_2]
+	 * [nqme2] [x2_1] [y2_1] [z2_2]
+	 * . . .
+	 * [total number of points]
+	 * Point = n
+	 * [s1_n] [x1_n] [y1_n] [z1_n]
+	 * [s2_n] [x2_n] [y2_n] [z2_n]
+	 *
+	 * @param particles - The array of particles whose instantaneous positions will be written to the file.
+	 * @param pointNum - The iteration at which the particles are currently at.
+	 * @param printWriter - The PrintWriter associated with the output file.
 	 */
-	//Write the coordinates of all particles to a file in VMD format
 	public static void writePointsToFile(Particle3D[] particles, int pointNum, PrintWriter printWriter){
 		printWriter.write(String.format("%d\n", particles.length));
 		printWriter.write(String.format("Point = %d\n", pointNum));
@@ -357,11 +441,12 @@ public class NBody {
 	}
 
 	/**
+	 * Calculates an array of the radial velocity components of an array of particles, which can be positive (radially
+	 * outwards) or negative (radially inwards).
 	 *
-	 * @param particles
-	 * @return
+	 * @param particles - The particles from which the radial velocity components will be calculated
+	 * @return - An array of radial velocity components.
 	 */
-	//Computes the radial velocity components compared to the origin for an array of particles
 	public static double[] radialVelocityComponents(Particle3D[] particles){
 		Vector3D radialVector;
 		double[] radialVelocityComponents = new double[particles.length];
@@ -374,15 +459,20 @@ public class NBody {
 	}
 
 	/**
+	 * Updates the two arrays containing aphelion and perihelion values (passed by reference) by checking for a change
+	 * of sign in the radial velocity components. It  does this by checking two cases:
+	 * If the old radial velocity component was positive and after a position update becomes negative, an aphelion was
+	 * crossed and the current position is used to compute the radial distance from the origin (assuming the timestep
+	 * is small enough to not have crossed the aphelion by too much).
+	 * The perihelion follows similar logic for when the old radial velocity component was negative and after a
+	 * position update becomes positive.
 	 *
-	 * @param particles
-	 * @param radialVelocityComponentOld
-	 * @param radialVelocityComponentNew
-	 * @param aphelions
-	 * @param perihelions
+	 * @param particles - The array of particles used to calculate positions.
+	 * @param radialVelocityComponentOld - Array of radial velocity component array at time t-dt.
+	 * @param radialVelocityComponentNew - Array of radial velocity component array at time t.
+	 * @param aphelions - Reference to the array containing the aphelions.
+	 * @param perihelions - Reference to the array containing the perihelions.
 	 */
-	//Updates the array containing apsis values (passed by reference) by checking for a change of sign in the radial
-	//velocity component
 	public static void checkApses(Particle3D[] particles, double[] radialVelocityComponentOld, double[] radialVelocityComponentNew
 			, double[] aphelions, double[] perihelions){
 		for(int i=0;i<radialVelocityComponentOld.length;i++){
@@ -395,7 +485,19 @@ public class NBody {
 		}
 	}
 
-	//Increments the partial orbits for heliocentric orbits
+	/**
+	 * Updates the array containing heliocentric partial orbits with respect to the initial state where all partial
+	 * orbits are set to 0. Orbital increments are calculated by finding the angle between the old and new position
+	 * vectors after a position update, and dividing this value by 2*PI to convert to a fraction of a single orbit.
+	 * All heliocentric orbit values are then incremented by this value.
+	 * This only provides an approximation to partial
+	 * orbits, as the orbital speed varies over the course of the orbit as a function of the eccentricity, and hence
+	 * when using it to compute orbital periods it works best when having performed many orbits.
+	 *
+	 * @param oldPositions - Array of heliocentric orbital positions at time t-dt.
+	 * @param newPositions - Array of heliocentric orbital positions at time t.
+	 * @param heliocentricOrbits - Reference to array containing the heliocentric partial orbit values.
+     */
 	public static void incrementHeliocentricOrbits(Vector3D[] oldPositions, Vector3D[] newPositions, double[] heliocentricOrbits){
 		for(int i=0;i<heliocentricOrbits.length;i++){
 			heliocentricOrbits[i] += Math.acos(Vector3D.dot(oldPositions[i], newPositions[i])
@@ -403,14 +505,29 @@ public class NBody {
 		}
 	}
 
-	//Increments the partial orbits for the moon's geocentric orbit
-	//lunarOrbit is only an array in order to allow it to be passed by reference
+	/**
+	 * This method is very similar to incrementHeliocentricOrbits() in function, but is designed specifically for
+	 * calculating the moon's (Luna's) orbit. Thus, the oldPosition and newPosition vectors must not heliocentric but
+	 * geocentric. The calculation is otherwise analogous to that in incrementHeliocentricOrbits().
+	 * lunarOrbit is an array of size 1, such that it can be passed as a reference and not a value.
+	 *
+	 * @param oldPosition - Geocentric orbital position vector at time t-dt.
+	 * @param newPosition - Geocentric orbital position vector at time t.
+	 * @param lunarOrbit - An array of size 1 containing the geocentric partial orbit value.
+     */
 	public static void incrementLunarOrbit(Vector3D oldPosition, Vector3D newPosition, double[] lunarOrbit){
 		lunarOrbit[0] += Math.acos(Vector3D.dot(oldPosition, newPosition)
 				/(oldPosition.mag()*newPosition.mag()))/(2.0*Math.PI);
 	}
 
-    // Find the index of a planet or moon in the particles array, and if not found return -1
+	/**
+	 * Finds a particle's index by name. It checks whether an array of particles contains a particle with a certain
+	 * name, and returns its index in the particles array. If it was not found, it returns -1.
+	 *
+	 * @param particles
+	 * @param name
+	 * @return
+     */
 	public static int findParticle(Particle3D[] particles, String name) {
 		for(int i=0;i<particles.length;i++){
 			if(particles[i].getName().equals(name)){
@@ -420,7 +537,12 @@ public class NBody {
 		return -1;
 	}
 
-	//Return an array of positions from an array of particles
+	/**
+	 * Returns an array of position vectors from an array of particles.
+	 *
+	 * @param particles - The list of particles from which the positions should be taken.
+	 * @return - The array of position vectors.
+     */
 	public static Vector3D[] getPositions(Particle3D[] particles){
 		Vector3D[] positions = new Vector3D[particles.length];
 		for(int i=0;i<particles.length;i++){
@@ -429,7 +551,12 @@ public class NBody {
 		return positions;
 	}
 
-	// Return an array of all heliocentric bodies
+	/**
+	 * Returns a list of
+	 *
+	 * @param particles
+	 * @return
+     */
 	public static Particle3D[] getHeliocentricBodies(Particle3D[] particles){
 		int heliocentricBodiesNum = 0;
 		boolean[] isHeliocentrics = new boolean[particles.length];
@@ -452,7 +579,14 @@ public class NBody {
 		return heliocentricBodies;
 	}
 
-	//Helper method for getHeliocentricBodies()
+	/**
+	 * Helper method for getHeliocentricBodies(). It checks whether the given name is contained in the list of
+	 * supported heliocentric bodies, which are: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
+	 * and 1P/Halley.
+	 *
+	 * @param name - The name of the body to check.
+	 * @return - True if it is found in the list of heliocentric bodies, false otherwise.
+     */
 	public static boolean isHeliocentric(String name){
 		return name.equals("Mercury") || name.equals("Venus") || name.equals("Earth") || name.equals("Mars")
 				|| name.equals("Jupiter") || name.equals("Saturn") || name.equals("Uranus") || name.equals("Neptune")

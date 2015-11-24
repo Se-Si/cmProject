@@ -179,7 +179,7 @@ public class Particle3D {
     /**
      * Reads the contents of a file and returns it in the form of an ArrayList of Particle3D objects.
      *
-     * The file must contain data in the following format:
+     * The file must contain data blocks in the following format:
      *
      * [Name]:
      * M=[mass]
